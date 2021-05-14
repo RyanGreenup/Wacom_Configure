@@ -53,7 +53,19 @@ func main_query() {
 	}
 
 	call_string := get_wacom_exec_string(xtl, ytl, xbl, ybl)
-	fmt.Println(call_string)
+	cs := regexp.MustCompile(`\s`).Split(call_string, -1)
+
+	if DEBUG {
+		fmt.Println(call_string)
+		// cs := strings.Split(call_string, " ")
+		fmt.Println(cs)
+	}
+
+	// Finally use that string to adjust the Wacom Tablet
+	_, err := exec.Command(cs[0], cs[1:]...).Output()
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
 
 }
 
