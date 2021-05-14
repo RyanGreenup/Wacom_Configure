@@ -55,19 +55,49 @@ func main_query() {
 	if DEBUG {
 		fmt.Println(xbl, ybl)
 		fmt.Println(xtl, ytl)
+		fmt.Printf("%dx%d+%d+%d\n", int(float64(height)*ratio), height, int(xbl), int(ytl))
 	}
 
 	// Try and get the ID or just print the devices
+	var s string = ""
 	id_val, err := get_wacom_id()
 	if err != nil {
 		print_wacom_devices()
 		fmt.Printf("xsetwacom set $id MapToOutput ")
+		s = strings.Join(
+			[]string{
+				"xsetwacom set $id MapToOutput",
+			}, "")
 	} else {
-		fmt.Printf("xsetwacom set ")
-		fmt.Printf("%d ", id_val)
-		fmt.Printf("MapToOutput ")
+		s = strings.Join(
+			[]string{
+				"xsetwacom set ",
+				fmt.Sprint(id_val),
+				" MapToOutput ",
+			}, "")
 	}
-	fmt.Printf("%dx%d+%d+%d\n", int(float64(height)*ratio), height, int(xbl), int(ytl))
+
+	s = strings.Join(
+		[]string{
+			"xsetwacom set ",
+			fmt.Sprint(id_val),
+			" MapToOutput ",
+		}, "")
+
+	s = strings.Join(
+		[]string{
+			s,
+			fmt.Sprint(int(float64(height) * ratio)),
+			"x",
+			fmt.Sprint(height),
+			"+",
+			fmt.Sprint(int(xbl)),
+			"+",
+			fmt.Sprint(int(ytl)),
+		}, "")
+
+	fmt.Println(s)
+
 }
 
 func press_enter() {
