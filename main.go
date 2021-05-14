@@ -43,19 +43,28 @@ func main_query() {
 		fmt.Println("Use `xsetwacom --list` and record the $id of the STYLUS")
 		fmt.Println("Get the Ratio of the Tablet with `xsetwacom get $id Area` (mine is 1.6)")
 	}
-	ratio := 1.6
-
-	height := ybl - ytl
-
-	if height < 0 {
-		fmt.Println("Did you get that backwards?")
-		// TODO use a recursive function to requery
-	}
 
 	if DEBUG {
 		fmt.Println(xbl, ybl)
 		fmt.Println(xtl, ytl)
+		height := ybl - ytl
+		ratio := 1.6
 		fmt.Printf("%dx%d+%d+%d\n", int(float64(height)*ratio), height, int(xbl), int(ytl))
+	}
+
+	call_string := get_wacom_exec_string(xtl, ytl, xbl, ybl)
+	fmt.Println(call_string)
+
+}
+
+func get_wacom_exec_string(xtl int, ytl int, xbl int, ybl int) string {
+
+	height := ybl - ytl
+	ratio := get_wacom_ratio()
+
+	if height < 0 {
+		fmt.Println("Did you get that backwards?")
+		// TODO use a recursive function to requery
 	}
 
 	// Try and get the ID or just print the devices
@@ -87,7 +96,7 @@ func main_query() {
 	s = strings.Join(
 		[]string{
 			s,
-			fmt.Sprint(int(float64(height) * ratio)),
+			fmt.Sprint(int(float64(height) * float64(ratio))),
 			"x",
 			fmt.Sprint(height),
 			"+",
@@ -96,8 +105,7 @@ func main_query() {
 			fmt.Sprint(int(ytl)),
 		}, "")
 
-	fmt.Println(s)
-
+	return s
 }
 
 func press_enter() {
@@ -155,4 +163,9 @@ func print_wacom_devices() {
 		fmt.Println(string(out))
 	}
 	fmt.Println("Use the ID from the type: STYLUS")
+}
+
+func get_wacom_ratio() float64 {
+	ratio := 1.6
+	return ratio
 }
