@@ -24,8 +24,23 @@ const n int = 3 // How many buttons are there on the wacom? (The fourth button i
 
 func main() {
 
+	test_dependencies()
 	configure_stylus_area()
 	configure_pad_buttons()
+
+}
+
+func test_dependencies() {
+	dependencies := [][]string{{"xdotool", "-v"}, {"xsetwacom", "-v"}}
+
+	for key, cs := range dependencies {
+		_ = key
+		// cs := []string{"xdotool", "-v"}
+		_, err := exec.Command(cs[0], cs[1:]...).Output()
+		if err != nil {
+			fmt.Println("Unable to execute: `", strings.Join(cs[:], " "), "`")
+		}
+	}
 
 }
 
