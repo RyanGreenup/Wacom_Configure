@@ -13,19 +13,23 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
+// Global Variables
+const DEBUG bool = false
+const DEVEL bool = false
+const n int = 3 // How many buttons are there on the wacom? (The fourth button isn't detected by `xsetwacom set $id Button 4 ...`)
+
 // NOTE in python
 // import pyautogui
 // pyautogui.position()
 
 func main() {
 
-	main_query()
+	configure_stylus_area()
+	configure_pad_buttons()
 
 }
 
-func main_query() {
-	DEBUG := false
-	DEVEL := false
+func configure_stylus_area() {
 	// 	robotgo.ScrollMouse(10, "up")
 	// 	robotgo.MouseClick("left", true)
 	// NOTE use `xdotool getmouselocation`
@@ -69,6 +73,93 @@ func main_query() {
 
 }
 
+func configure_pad_buttons() {
+
+	if DEVEL {
+		fmt.Println("Use `xsetwacom --list` and record the $id of the PAD")
+	}
+
+	button_commands, err := get_wacom_button_exec_string()
+	if err != nil {
+		fmt.Println("Unable to generate commands")
+	}
+	// button_commands = [n]string{"xsetwacom set 16 Button 1 \"key +ctrl +shift p -ctrl -shift\"", "xsetwacom set 16 Button 1 \"key +ctrl +shift p -ctrl -shift\"", "xsetwacom set 16 Button 1 \"key +ctrl +shift p -ctrl -shift\""}
+
+	if err != nil {
+		fmt.Println("Unable to generate commands for buttons")
+		fmt.Println(err)
+
+	}
+
+	if DEBUG {
+		fmt.Println("Outside Loop")
+		fmt.Println(button_commands)
+	}
+
+	for key, command_string := range button_commands {
+		cs := regexp.MustCompile(`\s`).Split(command_string, -1)
+		if DEBUG {
+			fmt.Println("Inside Loop, iteration:", key)
+			fmt.Println(cs)
+		} else {
+			_ = key
+		}
+		// Finally use that string to adjust the Wacom Tablet
+		_, err := exec.Command(cs[0], cs[1:]...).Output()
+		if err != nil {
+			fmt.Printf("%s", err)
+		}
+	}
+
+}
+
+func get_wacom_button_exec_string() ([3]string, error) {
+
+	// TODO should this be specified from the command line
+	// No, you're just recreating the CLI, advice the user
+	var keybindings [n]string = [n]string{"key +ctrl +shift p -ctrl -shift", "key +ctrl +shift = = = -ctrl -shift", "key +ctrl minus minus minus -ctrl "} // 3 is RMB
+
+	// TODO should this be a variable?
+	var commands [n]string = [n]string{"echo Foo", "echo blah", "echo meh"}
+
+	for i := 0; i < n; i++ {
+
+		var s string = ""
+		// Try and get the ID or just print the devices
+		id_val, err := get_wacom_id("PAD")
+		if err != nil {
+			fmt.Println("Unable to get ID value for PAD, try running: ")
+			fmt.Println("xsetwacom --list")
+			return [n]string{"", "", ""}, err
+		} else {
+			s = strings.Join(
+				[]string{
+					"xsetwacom set ",
+					fmt.Sprint(id_val),
+					" Button ",
+					fmt.Sprint(i + 1),
+					fmt.Sprint(" " + keybindings[i]),
+				}, "")
+			commands[i] = s
+		}
+
+	}
+
+	print_button_commands(commands)
+
+	return commands, nil
+}
+
+func print_button_commands(commands [n]string) {
+	fmt.Println("The following commands were executed for the buttons" + "\n" +
+		"the same commands can freely be re-executed to modify the mappings" + "\n")
+	for key, command := range commands {
+		_ = key
+		fmt.Println(command)
+	}
+	fmt.Println("\n")
+}
+
 func get_wacom_exec_string(xtl int, ytl int, xbl int, ybl int) string {
 
 	height := ybl - ytl
@@ -81,7 +172,7 @@ func get_wacom_exec_string(xtl int, ytl int, xbl int, ybl int) string {
 
 	// Try and get the ID or just print the devices
 	var s string = ""
-	id_val, err := get_wacom_id()
+	id_val, err := get_wacom_id("STYLUS")
 	if err != nil {
 		print_wacom_devices()
 		fmt.Printf("xsetwacom set $id MapToOutput ")
@@ -134,7 +225,7 @@ func press_enter() {
 // robust and should atleast have error handling before it's properly
 // implemented.
 // Python might be better for this to be honest.
-func get_wacom_id() (int64, error) {
+func get_wacom_id(device_name string) (int64, error) {
 
 	out, err := exec.Command("xsetwacom", "--list").Output()
 	if err != nil {
@@ -142,14 +233,14 @@ func get_wacom_id() (int64, error) {
 	}
 	out_lines := strings.Split(string(out), "\n")
 	for _, line := range out_lines {
-		if strings.Contains(line, "STYLUS") {
+		if strings.Contains(line, device_name) {
 
 			// line = strings.Replace(line, ".*id", "foo", 1)
 
 			re := regexp.MustCompile(`.*id:\ `)
 			line := re.ReplaceAllString(line, "")
 
-			re = regexp.MustCompile(`[\s]*type: STYLUS`)
+			re = regexp.MustCompile(`[\s]*type: ` + device_name)
 			line = re.ReplaceAllString(line, "")
 
 			re = regexp.MustCompile(`[\s]*`)
